@@ -15,6 +15,6 @@ data class Note(
     @ColumnInfo(name = "notes_description")
     val description: String,
     @ColumnInfo(name = "notes_date")
-    val date: Date = Date()
+    val date: String = Date().toString()
 
 )
