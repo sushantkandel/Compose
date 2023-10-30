@@ -22,6 +22,7 @@ import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,12 +35,29 @@ import com.example.mcqapp.utils.AppColors
 @Composable
 fun QuestionView(questionViewModel: QuestionViewModel) {
     val questions = questionViewModel.data.value.data?.toMutableList()
+    val questionIndex = remember {
+        mutableStateOf(0)
+    }
     Log.d("SIZE", "QuestionSize:${questions?.size} ")
     if (questionViewModel.data.value.loading == true) {
         Log.d("Loading", "Questions: .....Loading..... ")
     } else {
+        val question = try {
+            questions?.get(questionIndex.value)
+        } catch (ex: Exception) {
+            null
+        }
+
         if (questions != null) {
-            QuestionDisplay(question = questions.first())
+            if (question != null) {
+                QuestionDisplay(
+                    question = question,
+                    viewModel = questionViewModel,
+                    questionIndex = questionIndex
+                ) {
+                    questionIndex.value = questionIndex.value + 1
+                }
+            }
         }
     }
 
@@ -56,8 +74,8 @@ fun QuestionView(questionViewModel: QuestionViewModel) {
 @Composable
 fun QuestionDisplay(
     question: QuestionItem,
-    // viewModel: QuestionViewModel,
-    //questionIndex: MutableState<Int>,
+    viewModel: QuestionViewModel,
+    questionIndex: MutableState<Int>,
     onNextClicked: (Int) -> Unit = {}
 ) {
     var pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
@@ -87,8 +105,7 @@ fun QuestionDisplay(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(),
-        color = AppColors.mDarkPurple
+            .fillMaxHeight(), color = AppColors.mDarkPurple
     ) {
         Column(
             modifier = Modifier
@@ -97,7 +114,8 @@ fun QuestionDisplay(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start
         ) {
-            QuestionTracker()
+            if (questionIndex.value > 3) ShowProgress(questionIndex.value)
+            QuestionTracker(questionIndex.value, viewModel.getTotalQuestionCount())
             DrawDottedLine(pathEffect = pathEffect)
             Column {
                 question.question?.let {
@@ -145,8 +163,7 @@ fun QuestionDisplay(
                             onClick = { updateAnswer(index) },
                             modifier = Modifier.padding(start = 16.dp),
                             colors = RadioButtonDefaults.colors(
-                                selectedColor =
-                                if (correctAnswerState.value == true && index == answerState.value) {
+                                selectedColor = if (correctAnswerState.value == true && index == answerState.value) {
                                     Color.Green.copy(alpha = 0.2f)
                                 } else {
                                     Color.Red.copy(alpha = 0.2f)
@@ -157,14 +174,15 @@ fun QuestionDisplay(
                             val annotatedString = buildAnnotatedString {
                                 withStyle(
                                     style = SpanStyle(
-                                        fontWeight = FontWeight.Light, color =
-                                        if (correctAnswerState.value == true && index == answerState.value) {
+                                        fontWeight = FontWeight.Light,
+                                        color = if (correctAnswerState.value == true && index == answerState.value) {
                                             Color.Green
                                         } else if (correctAnswerState.value == false && index == answerState.value) {
                                             Color.Red
                                         } else {
                                             AppColors.mOffWhite
-                                        }, fontSize = 17.sp
+                                        },
+                                        fontSize = 17.sp
                                     )
                                 ) {
                                     append(answer)
@@ -177,6 +195,28 @@ fun QuestionDisplay(
 
                 }
 
+                Spacer(modifier = Modifier.padding(top = 20.dp))
+
+                Button(
+                    onClick = { onNextClicked(questionIndex.value) },
+                    modifier = Modifier
+                        .padding(3.dp)
+                        .align(Alignment.CenterHorizontally),
+                    shape = RoundedCornerShape(34.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.mLightBlue, contentColor = AppColors.mOffWhite
+                    )
+                ) {
+                    Text(
+                        text = "Next",
+                        modifier = Modifier.padding(4.dp),
+                        color = AppColors.mOffWhite,
+                        fontSize = 17.sp
+                    )
+
+                }
+
+
             }
 
         }
@@ -187,7 +227,7 @@ fun QuestionDisplay(
 
 @Preview
 @Composable
-fun QuestionTracker(counter: Int = 10, outOff: Int = 100) {
+fun QuestionTracker(counter: Int = 0, outOff: Int = 0) {
     Text(
         text = buildAnnotatedString {
             withStyle(style = ParagraphStyle(textIndent = TextIndent.None)) {
@@ -227,6 +267,76 @@ fun DrawDottedLine(pathEffect: PathEffect) {
             end = Offset(x = size.width, y = 0f),
             pathEffect = pathEffect
         )
+
+    }
+
+}
+
+@Preview
+@Composable
+fun ShowProgress(score: Int = 12) {
+    val gradient = Brush.linearGradient(
+        listOf(
+            Color(0XFFF95075),
+            Color(0XFFBE6BE5)
+        )
+    )
+
+    val progressFactor = remember(score) {
+        mutableStateOf(score * 0.005f)
+    }
+
+    Row(
+        modifier = Modifier
+            .padding(3.dp)
+            .fillMaxWidth()
+            .height(45.dp)
+            .border(
+                width = 4.dp, brush = Brush.linearGradient(
+                    colors = listOf(
+                        AppColors.mLightPurple, AppColors.mLightPurple
+                    )
+                ), shape = RoundedCornerShape(34.dp)
+
+            )
+            .clip(
+                RoundedCornerShape(
+                    topStartPercent = 50,
+                    topEndPercent = 50,
+                    bottomStartPercent = 50,
+                    bottomEndPercent = 50
+                )
+            )
+            .background(Color.Transparent),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Button(
+            contentPadding = PaddingValues(1.dp),
+            onClick = { },
+            modifier = Modifier
+                .fillMaxWidth(progressFactor.value)
+                .background(brush = gradient),
+            enabled = false,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White,
+                disabledContainerColor = Color.Transparent,
+                disabledContentColor = Color.White
+            )
+        ) {
+
+            Text(
+                text = (score).toString(),
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(23.dp))
+                    .fillMaxWidth()
+                    .fillMaxWidth(0.87f)
+                    .padding(6.dp),
+                color = AppColors.mOffWhite,
+                textAlign = TextAlign.Center
+            )
+
+        }
 
     }
 
