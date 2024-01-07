@@ -3,7 +3,7 @@ package com.example.weatherapp.model
 
 import com.google.gson.annotations.SerializedName
 
-data class WeatherObject(
+data class WeatherItem(
     @SerializedName("clouds")
     val clouds: Int?,
     @SerializedName("deg")
@@ -17,7 +17,7 @@ data class WeatherObject(
     @SerializedName("humidity")
     val humidity: Int?,
     @SerializedName("pop")
-    val pop: Int?,
+    val pop: Double ?,
     @SerializedName("pressure")
     val pressure: Int?,
     @SerializedName("speed")
@@ -29,5 +29,5 @@ data class WeatherObject(
     @SerializedName("temp")
     val temp: Temp?,
     @SerializedName("weather")
-    val weather: List<WeatherX>?
+    val weather: List<WeatherObject>?
 )
